@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blyfox Social</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a2e;
+            color: #ffffff;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+        }
+        .alert {
+            position: fixed;
+            top: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 0.75rem 1.5rem;
+            background-color: #f7a049;
+            color: #1a1a2e;
+            font-weight: bold;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .modal {
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+        }
+        .modal-content {
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .adult-content-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 1rem;
+            border-radius: 1rem;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body class="bg-[#1a1a2e] text-white font-sans">
+    
+    <!-- Alerta Flutuante -->
+    <div id="alert-container" class="alert hidden"></div>
+
+    <div class="container bg-slate-800 rounded-xl shadow-2xl space-y-6">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-center text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-600 mb-6">Blyfox Social</h1>
+        
+        <!-- Navegação -->
+        <nav class="flex justify-around items-center bg-slate-700 p-4 rounded-full shadow-lg">
+            <button id="feed-btn" class="flex-1 py-2 px-4 text-center rounded-full text-white font-bold transition-colors duration-300 hover:bg-slate-600 focus:outline-none">
+                <i class="fas fa-home"></i> <span id="nav-feed-text" class="hidden sm:inline">Feed</span>
+            </button>
+            <button id="search-btn" class="flex-1 py-2 px-4 text-center rounded-full text-white font-bold transition-colors duration-300 hover:bg-slate-600 focus:outline-none">
+                <i class="fas fa-search"></i> <span id="nav-search-text" class="hidden sm:inline">Pesquisar</span>
+            </button>
+            <button id="dms-btn" class="flex-1 py-2 px-4 text-center rounded-full text-white font-bold transition-colors duration-300 hover:bg-slate-600 focus:outline-none">
+                <i class="fas fa-envelope"></i> <span id="nav-dms-text" class="hidden sm:inline">Mensagens</span>
+            </button>
+            <button id="profile-btn" class="flex-1 py-2 px-4 text-center rounded-full text-white font-bold transition-colors duration-300 hover:bg-slate-600 focus:outline-none">
+                <i class="fas fa-user"></i> <span id="nav-profile-text" class="hidden sm:inline">Perfil</span>
+            </button>
+        </nav>
+
+        <!-- Modals -->
+        <!-- Modal de Perfil de Usuário -->
+        <div id="username-modal" class="hidden fixed inset-0 flex items-center justify-center modal">
+            <div class="bg-slate-700 p-8 rounded-2xl shadow-2xl w-11/12 sm:w-2/3 md:w-1/2 lg:w-1/3 modal-content space-y-6">
+                <h2 id="modal-title" class="text-2xl font-bold text-center text-blue-400">Criar Perfil</h2>
+                <p id="modal-subtitle" class="text-gray-300 text-center">Escolha um nome de usuário único. Ele será a sua identidade no aplicativo.</p>
+                <input 
+                    id="username-input" 
+                    type="text" 
+                    placeholder="Nome de usuário único..." 
+                    class="w-full px-5 py-3 rounded-xl bg-slate-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
+                    maxlength="20">
+                <button 
+                    id="save-username-btn" 
+                    class="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-700">
+                    Salvar
+                </button>
+            </div>
+        </div>
+
+        <!-- DM Forward Modal -->
+        <div id="forward-modal" class="hidden fixed inset-0 flex items-center justify-center modal">
+            <div class="bg-slate-700 p-8 rounded-2xl shadow-2xl w-11/12 sm:w-2/3 md:w-1/2 lg:w-1/3 modal-content space-y-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 id="forward-modal-title" class="text-2xl font-bold text-blue-400">Encaminhar Post</h2>
+                    <button id="close-forward-modal-btn" class="text-gray-400 hover:text-white text-lg"><i class="fas fa-times"></i></button>
+                </div>
+                <input 
+                    id="forward-user-input" 
+                    type="text" 
+                    placeholder="Digite o nome de usuário do destinatário..." 
+                    class="w-full px-5 py-3 rounded-xl bg-slate-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">
+                <div id="forward-results" class="mt-4 space-y-2 max-h-48 overflow-y-auto"></div>
+            </div>
+        </div>
+
+        <!-- Conteúdo Principal -->
+        <div id="feed-view" class="view space-y-6 hidden">
+            <!-- UI de criação de postagem -->
+            <div class="bg-slate-700 p-6 rounded-xl shadow-lg">
+                <textarea 
+                    id="post-text" 
+                    class="w-full h-24 p-4 rounded-lg bg-slate-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300 resize-none" 
+                    placeholder="O que você está pensando?" 
+                    maxlength="280">
+                </textarea>
+                <div id="media-preview" class="hidden mt-4 rounded-lg overflow-hidden"></div>
+                <div class="flex justify-between items-center mt-4">
+                    <label class="cursor-pointer px-4 py-2 rounded-full bg-slate-600 text-gray-400 hover:bg-slate-500 transition-colors">
+                        <i class="fas fa-image"></i>
+                        <input type="file" id="media-input" class="hidden" accept="image/*,video/*">
+                    </label>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="is-adult-content" class="mr-2 h-4 w-4 text-blue-500 bg-gray-600 rounded border-gray-500 focus:ring-blue-500">
+                        <label id="label-adult-content" for="is-adult-content" class="text-sm text-gray-400">Conteúdo Adulto</label>
+                    </div>
+                    <button id="post-btn" class="px-6 py-3 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800">
+                        Postar
+                    </button>
+                </div>
+            </div>
+            <!-- Feed de posts -->
+            <div id="posts-feed" class="space-y-4">
+                <p id="feed-placeholder" class="text-center text-gray-400 italic">Nenhum post ainda. Seja o primeiro a postar!</p>
+            </div>
+        </div>
+
+        <!-- Visão de Pesquisa -->
+        <div id="search-view" class="view space-y-6 hidden">
+            <div class="relative">
+                <input 
+                    id="search-input" 
+                    type="text" 
+                    placeholder="Pesquisar por perfis ou #hashtags" 
+                    class="w-full px-5 py-3 pr-12 rounded-xl bg-slate-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">
+                <i class="fas fa-search absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            </div>
+            <div id="search-results-container" class="space-y-4">
+                <h3 id="featured-posts-title" class="text-xl font-bold text-blue-400">Posts em Destaque</h3>
+                <div id="featured-posts-feed" class="space-y-4">
+                    <p id="featured-placeholder" class="text-center text-gray-400 italic">Carregando posts...</p>
+                </div>
+                <h3 id="search-results-title" class="text-xl font-bold text-blue-400 hidden">Resultados da Pesquisa</h3>
+                <div id="search-results" class="space-y-4"></div>
+            </div>
+        </div>
+
+        <!-- Visão de DMs -->
+        <div id="dms-view" class="view space-y-6 hidden">
+            <h2 id="dms-title" class="text-2xl font-bold text-blue-400">Mensagens Diretas</h2>
+            <div class="bg-slate-700 p-6 rounded-xl shadow-lg">
+                <input 
+                    id="dm-user-input" 
+                    type="text" 
+                    placeholder="Digite um nome de usuário para iniciar uma conversa..." 
+                    class="w-full px-5 py-3 rounded-xl bg-slate-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300">
+                <div class="mt-4">
+                    <button id="start-dm-btn" class="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800">
+                        Iniciar Conversa
+                    </button>
+                </div>
+            </div>
+            <div id="conversations-list" class="space-y-4">
+                <p id="conversations-placeholder" class="text-center text-gray-400 italic">Nenhuma conversa. Inicie uma nova!</p>
+            </div>
+            <div id="dm-chat-view" class="hidden">
+                <button id="back-to-dms-btn" class="px-4 py-2 mb-4 rounded-full bg-slate-600 text-white hover:bg-slate-500"><i class="fas fa-arrow-left"></i> <span id="back-btn-text">Voltar</span></button>
+                <h3 id="dm-recipient-username" class="text-xl font-bold mb-4"></h3>
+                <div id="dm-messages-container" class="bg-slate-700 p-4 rounded-xl shadow-inner h-96 overflow-y-auto space-y-4 flex flex-col-reverse"></div>
+                <div class="flex mt-4 space-x-2">
+                    <input type="text" id="dm-message-input" placeholder="Digite sua mensagem..." class="flex-1 px-4 py-2 rounded-full bg-slate-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <button id="send-dm-btn" class="px-6 py-2 rounded-full bg-blue-500 text-white font-bold hover:bg-blue-600">Enviar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visão de Perfil -->
+        <div id="profile-view" class="view space-y-6 hidden">
+            <h2 id="profile-title" class="text-2xl font-bold text-blue-400">Seu Perfil</h2>
+            <div id="profile-card" class="bg-slate-700 p-8 rounded-2xl text-center">
+                <i class="fas fa-user-circle text-6xl text-gray-400 mb-4"></i>
+                <p class="text-xl font-bold" id="profile-username">Carregando...</p>
+                <p class="text-sm text-gray-500 mt-1" id="profile-user-id"></p>
+                <p id="profile-id-note" class="text-xs text-gray-500 mt-4 italic">Seu ID de Usuário é necessário para as mensagens diretas. Compartilhe com cuidado.</p>
+            </div>
+            
+            <div id="settings-view" class="space-y-6 hidden">
+                <div class="flex items-center justify-between">
+                    <h3 id="settings-title" class="text-xl font-bold text-blue-400">Configurações</h3>
+                    <button id="back-to-profile-btn" class="px-4 py-2 rounded-full bg-slate-600 text-white hover:bg-slate-500"><i class="fas fa-arrow-left"></i> <span id="back-profile-btn-text">Voltar</span></button>
+                </div>
+                
+                <div class="bg-slate-700 p-6 rounded-xl shadow-lg space-y-4">
+                    <h4 id="language-title" class="text-lg font-bold text-blue-400">Idioma</h4>
+                    <div class="flex items-center space-x-4">
+                        <select id="language-select" class="bg-slate-600 text-white p-2 rounded-lg">
+                            <option value="pt">Português</option>
+                            <option value="en">English</option>
+                            <option value="fr">Français</option>
+                        </select>
+                    </div>
+
+                    <h4 id="content-settings-title" class="text-lg font-bold text-blue-400">Configurações de Conteúdo</h4>
+                    <div class="flex items-center justify-between">
+                        <span id="adult-content-label" class="text-gray-300">Desativar avisos de conteúdo adulto</span>
+                        <label for="adult-content-toggle" class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="adult-content-toggle" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                    <p id="adult-content-note" class="text-xs text-gray-500 mt-2">É de sua total responsabilidade visualizar o conteúdo após desativar o aviso.</p>
+                </div>
+
+                <div class="bg-slate-700 p-6 rounded-xl shadow-lg">
+                    <h4 id="install-title" class="text-lg font-bold text-blue-400 mb-2">Instalar App</h4>
+                    <p id="install-note" class="text-sm text-gray-300 mb-4">Adicione o Blyfox Social à sua tela inicial para uma experiência de aplicativo.</p>
+                    <button id="install-btn" class="w-full px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-700">
+                        Instalar
+                    </button>
+                    <p id="install-manual-note" class="text-xs text-gray-500 mt-2 hidden">Toque no menu do navegador e selecione "Adicionar à tela inicial".</p>
+                </div>
+            </div>
+
+            <div id="profile-content" class="space-y-6">
+                <button id="settings-btn" class="w-full px-6 py-3 rounded-xl bg-slate-700 text-white font-bold shadow-lg transform transition-all duration-300 hover:scale-101 hover:shadow-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-slate-800">
+                    <i class="fas fa-cog"></i> <span id="settings-btn-text">Configurações</span>
+                </button>
+                <h3 id="my-posts-title" class="text-xl font-bold text-blue-400 mt-6">Suas Postagens</h3>
+                <div id="my-posts-feed" class="space-y-4">
+                    <p id="my-posts-placeholder" class="text-center text-gray-400 italic">Nenhuma postagem sua. Poste algo no feed!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script para o Firebase e a lógica do app -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, where, getDocs, doc, setDoc, getDoc, updateDoc, writeBatch, serverTimestamp, orderBy, limit, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        setLogLevel('debug');
+
+        // Service worker registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker registrado com sucesso:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Falha ao registrar Service Worker:', error);
+                    });
+            });
+        }
+        
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-btn').classList.remove('hidden');
+        });
+
+        // Variáveis globais para os serviços do Firebase e dados do usuário
+        let app;
+        let db;
+        let auth;
+        let userId = null;
+        let profileData = null;
+        let isAuthReady = false;
+        let currentChatRecipientId = null;
+        let selectedMediaFile = null;
+        let currentLanguage = 'pt';
+        let showAdultContent = false;
+
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        const views = {
+            'feed-view': document.getElementById('feed-view'),
+            'search-view': document.getElementById('search-view'),
+            'dms-view': document.getElementById('dms-view'),
+            'profile-view': document.getElementById('profile-view'),
+            'dm-chat-view': document.getElementById('dm-chat-view'),
+            'settings-view': document.getElementById('settings-view')
+        };
+        const usernameModal = document.getElementById('username-modal');
+        const usernameInput = document.getElementById('username-input');
+        const saveUsernameBtn = document.getElementById('save-username-btn');
+        const postTextarea = document.getElementById('post-text');
+        const mediaInput = document.getElementById('media-input');
+        const mediaPreview = document.getElementById('media-preview');
+        const isAdultContentCheckbox = document.getElementById('is-adult-content');
+        const postBtn = document.getElementById('post-btn');
+        const postsFeed = document.getElementById('posts-feed');
+        const myPostsFeed = document.getElementById('my-posts-feed');
+        const alertContainer = document.getElementById('alert-container');
+        const profileUsernameEl = document.getElementById('profile-username');
+        const profileUserIdEl = document.getElementById('profile-user-id');
+        const dmUserSearchInput = document.getElementById('dm-user-input');
+        const startDmBtn = document.getElementById('start-dm-btn');
+        const conversationsList = document.getElementById('conversations-list');
+        const dmRecipientUsernameEl = document.getElementById('dm-recipient-username');
+        const dmMessagesContainer = document.getElementById('dm-messages-container');
+        const dmMessageInput = document.getElementById('dm-message-input');
+        const sendDmBtn = document.getElementById('send-dm-btn');
+        const searchInput = document.getElementById('search-input');
+        const featuredPostsFeed = document.getElementById('featured-posts-feed');
+        const searchResultsContainer = document.getElementById('search-results');
+        const searchResultsTitle = document.getElementById('search-results-title');
+        const forwardModal = document.getElementById('forward-modal');
+        const closeForwardModalBtn = document.getElementById('close-forward-modal-btn');
+        const forwardUserInput = document.getElementById('forward-user-input');
+        const forwardResults = document.getElementById('forward-results');
+        const adultContentToggle = document.getElementById('adult-content-toggle');
+        const languageSelect = document.getElementById('language-select');
+        const installBtn = document.getElementById('install-btn');
+        const installManualNote = document.getElementById('install-manual-note');
+        let postToForward = null;
+
+        const translations = {
+            'pt': {
+                'nav-feed': 'Feed',
+                'nav-search': 'Pesquisar',
+                'nav-dms': 'Mensagens',
+                'nav-profile': 'Perfil',
+                'modal-title': 'Criar Perfil',
+                'modal-subtitle': 'Escolha um nome de usuário único. Ele será a sua identidade no aplicativo.',
+                'username-placeholder': 'Nome de usuário único...',
+                'save-btn': 'Salvar',
+                'post-placeholder': 'O que você está pensando?',
+                'post-btn': 'Postar',
+                'label-adult-content': 'Conteúdo Adulto',
+                'feed-placeholder': 'Nenhum post ainda. Seja o primeiro a postar!',
+                'post-no-content': 'O post não pode estar vazio.',
+                'error-auth': 'Erro ao inicializar o aplicativo.',
+                'error-username-empty': 'Nome de usuário não pode ser vazio.',
+                'error-username-exists': 'Este nome de usuário já existe.',
+                'error-save-profile': 'Erro ao salvar o perfil.',
+                'error-post': 'Ocorreu um erro ao postar a mensagem.',
+                'error-like': 'Erro ao atualizar curtida.',
+                'error-comment': 'Erro ao adicionar comentário.',
+                'error-search-user': 'Erro ao buscar nome de usuário.',
+                'error-dm-self': 'Você não pode enviar mensagens para si mesmo.',
+                'error-dm-send': 'Erro ao enviar mensagem.',
+                'error-forward': 'Erro ao encaminhar post.',
+                'error-search': 'Erro ao realizar a busca.',
+                'forward-modal-title': 'Encaminhar Post',
+                'forward-input-placeholder': 'Digite o nome de usuário do destinatário...',
+                'featured-posts-title': 'Posts em Destaque',
+                'featured-placeholder': 'Carregando posts...',
+                'search-results-title': 'Resultados da Pesquisa',
+                'search-placeholder': 'Pesquisar por perfis ou #hashtags',
+                'search-user-not-found': 'Nome de usuário não encontrado.',
+                'search-no-posts': 'Nenhum post encontrado com esta hashtag.',
+                'search-no-profile': 'Nenhum perfil encontrado.',
+                'dms-title': 'Mensagens Diretas',
+                'dms-input-placeholder': 'Digite um nome de usuário para iniciar uma conversa...',
+                'start-dm-btn': 'Iniciar Conversa',
+                'conversations-placeholder': 'Nenhuma conversa. Inicie uma nova!',
+                'back-btn': 'Voltar',
+                'dm-input-placeholder': 'Digite sua mensagem...',
+                'send-btn': 'Enviar',
+                'profile-title': 'Seu Perfil',
+                'profile-id-note': 'Seu ID de Usuário é necessário para as mensagens diretas. Compartilhe com cuidado.',
+                'settings-btn': 'Configurações',
+                'my-posts-title': 'Suas Postagens',
+                'my-posts-placeholder': 'Nenhuma postagem sua. Poste algo no feed!',
+                'comment-toggle-btn': 'Comentar',
+                'comment-input-placeholder': 'Adicionar um comentário...',
+                'comment-btn': 'Enviar',
+                'like-btn': 'Curtir',
+                'forward-btn': 'Encaminhar',
+                'forward-success': 'Post encaminhado com sucesso!',
+                'content-warning-title': 'Conteúdo Adulto',
+                'content-warning-text': 'Este post pode conter material sensível. Clique para visualizar.',
+                'content-warning-btn': 'Ver Conteúdo',
+                'profile-username-label': 'Nome de Usuário:',
+                'profile-user-id-label': 'ID do Usuário:',
+                'settings-title': 'Configurações',
+                'language-title': 'Idioma',
+                'content-settings-title': 'Configurações de Conteúdo',
+                'adult-content-label': 'Desativar avisos de conteúdo adulto',
+                'adult-content-note': 'É de sua total responsabilidade visualizar o conteúdo após desativar o aviso.',
+                'warnings-disabled': 'Avisos de conteúdo adulto desativados. É de sua responsabilidade.',
+                'warnings-enabled': 'Avisos de conteúdo adulto ativados.',
+                'install-title': 'Instalar App',
+                'install-note': 'Adicione o Blyfox Social à sua tela inicial para uma experiência de aplicativo.',
+                'install-btn': 'Instalar',
+                'install-manual-note': 'Toque no menu do navegador e selecione "Adicionar à tela inicial".'
+            },
+            'en': {
+                'nav-feed': 'Feed',
+                'nav-search': 'Search',
+                'nav-dms': 'Messages',
+                'nav-profile': 'Profile',
+                'modal-title': 'Create Profile',
+                'modal-subtitle': 'Choose a unique username. It will be your identity on the app.',
+                'username-placeholder': 'Unique username...',
+                'save-btn': 'Save',
+                'post-placeholder': 'What\'s on your mind?',
+                'post-btn': 'Post',
+                'label-adult-content': 'Adult Content',
+                'feed-placeholder': 'No posts yet. Be the first to post!',
+                'post-no-content': 'Post cannot be empty.',
+                'error-auth': 'Error initializing the app.',
+                'error-username-empty': 'Username cannot be empty.',
+                'error-username-exists': 'This username already exists.',
+                'error-save-profile': 'Error saving profile.',
+                'error-post': 'An error occurred while posting the message.',
+                'error-like': 'Error updating like.',
+                'error-comment': 'Error adding comment.',
+                'error-search-user': 'Error fetching username.',
+                'error-dm-self': 'You cannot send messages to yourself.',
+                'error-dm-send': 'Error sending message.',
+                'error-forward': 'Error forwarding post.',
+                'error-search': 'Error performing search.',
+                'forward-modal-title': 'Forward Post',
+                'forward-input-placeholder': 'Enter recipient\'s username...',
+                'featured-posts-title': 'Featured Posts',
+                'featured-placeholder': 'Loading posts...',
+                'search-results-title': 'Search Results',
+                'search-placeholder': 'Search for profiles or #hashtags',
+                'search-user-not-found': 'Username not found.',
+                'search-no-posts': 'No posts found with this hashtag.',
+                'search-no-profile': 'No profile found.',
+                'dms-title': 'Direct Messages',
+                'dms-input-placeholder': 'Enter a username to start a conversation...',
+                'start-dm-btn': 'Start Conversation',
+                'conversations-placeholder': 'No conversations. Start a new one!',
+                'back-btn': 'Back',
+                'dm-input-placeholder': 'Type your message...',
+                'send-btn': 'Send',
+                'profile-title': 'Your Profile',
+                'profile-id-note': 'Your User ID is required for direct messages. Share with caution.',
+                'settings-btn': 'Settings',
+                'my-posts-title': 'Your Posts',
+                'my-posts-placeholder': 'No posts from you. Post something on the feed!',
+                'comment-toggle-btn': 'Comment',
+                'comment-input-placeholder': 'Add a comment...',
+                'comment-btn': 'Send',
+                'like-btn': 'Like',
+                'forward-btn': 'Forward',
+                'forward-success': 'Post forwarded successfully!',
+                'content-warning-title': 'Adult Content',
+                'content-warning-text': 'This post may contain sensitive material. Click to view.',
+                'content-warning-btn': 'View Content',
+                'profile-username-label': 'Username:',
+                'profile-user-id-label': 'User ID:',
+                'settings-title': 'Settings',
+                'language-title': 'Language',
+                'content-settings-title': 'Content Settings',
+                'adult-content-label': 'Disable adult content warnings',
+                'adult-content-note': 'It is your sole responsibility to view the content after disabling the warning.',
+                'warnings-disabled': 'Adult content warnings disabled. It is your responsibility.',
+                'warnings-enabled': 'Adult content warnings enabled.',
+                'install-title': 'Install App',
+                'install-note': 'Add Blyfox Social to your home screen for an app-like experience.',
+                'install-btn': 'Install',
+                'install-manual-note': 'Tap on the browser menu and select "Add to Home Screen".'
+            },
+            'fr': {
+                'nav-feed': 'Fil d\'actualité',
+                'nav-search': 'Rechercher',
+                'nav-dms': 'Messages',
+                'nav-profile': 'Profil',
+                'modal-title': 'Créer un profil',
+                'modal-subtitle': 'Choisissez un nom d\'utilisateur unique. Ce sera votre identité sur l\'application.',
+                'username-placeholder': 'Nom d\'utilisateur unique...',
+                'save-btn': 'Enregistrer',
+                'post-placeholder': 'À quoi pensez-vous?',
+                'post-btn': 'Publier',
+                'label-adult-content': 'Contenu pour adultes',
+                'feed-placeholder': 'Aucun message pour l\'instant. Soyez le premier à publier !',
+                'post-no-content': 'Le message ne peut pas être vide.',
+                'error-auth': 'Erreur lors de l\'initialisation de l\'application.',
+                'error-username-empty': 'Le nom d\'utilisateur ne peut pas être vide.',
+                'error-username-exists': 'Ce nom d\'utilisateur existe déjà.',
+                'error-save-profile': 'Erreur lors de l\'enregistrement du profil.',
+                'error-post': 'Une erreur s\'est produite lors de la publication du message.',
+                'error-like': 'Erreur lors de la mise à jour du like.',
+                'error-comment': 'Erreur lors de l\'ajout du commentaire.',
+                'error-search-user': 'Erreur lors de la récupération du nom d\'utilisateur.',
+                'error-dm-self': 'Vous ne pouvez pas vous envoyer de messages.',
+                'error-dm-send': 'Erreur lors de l\'envoi du message.',
+                'error-forward': 'Erreur lors du transfert du message.',
+                'error-search': 'Erreur lors de la recherche.',
+                'forward-modal-title': 'Transférer un message',
+                'forward-input-placeholder': 'Entrez le nom d\'utilisateur du destinataire...',
+                'featured-posts-title': 'Publications à la une',
+                'featured-placeholder': 'Chargement des publications...',
+                'search-results-title': 'Résultats de la recherche',
+                'search-placeholder': 'Rechercher des profils ou des #hashtags',
+                'search-user-not-found': 'Nom d\'utilisateur non trouvé.',
+                'search-no-posts': 'Aucune publication trouvée avec ce hashtag.',
+                'search-no-profile': 'Aucun profil trouvé.',
+                'dms-title': 'Messages directs',
+                'dms-input-placeholder': 'Entrez un nom d\'utilisateur pour démarrer une conversation...',
+                'start-dm-btn': 'Démarrer la conversation',
+                'conversations-placeholder': 'Aucune conversation. Démarrez-en une nouvelle !',
+                'back-btn': 'Retour',
+                'dm-input-placeholder': 'Tapez votre message...',
+                'send-btn': 'Envoyer',
+                'profile-title': 'Votre profil',
+                'profile-id-note': 'Votre identifiant d\'utilisateur est requis pour les messages directs. Partagez avec prudence.',
+                'settings-btn': 'Paramètres',
+                'my-posts-title': 'Vos publications',
+                'my-posts-placeholder': 'Aucune publication de votre part. Publiez quelque chose !',
+                'comment-toggle-btn': 'Commenter',
+                'comment-input-placeholder': 'Ajouter un commentaire...',
+                'comment-btn': 'Envoyer',
+                'like-btn': 'J\'aime',
+                'forward-btn': 'Transférer',
+                'forward-success': 'Message transféré avec succès !',
+                'content-warning-title': 'Contenu pour adultos',
+                'content-warning-text': 'Ce message peut contenir du contenu sensible. Cliquez pour le voir.',
+                'content-warning-btn': 'Voir le contenu',
+                'profile-username-label': 'Nom d\'utilisateur:',
+                'profile-user-id-label': 'ID d\'utilisateur:',
+                'settings-title': 'Paramètres',
+                'language-title': 'Langue',
+                'content-settings-title': 'Paramètres de conteúdo',
+                'adult-content-label': 'Désactiver les avertissements de contenu pour adultos',
+                'adult-content-note': 'Il est de votre seule responsabilité de voir le contenu après avoir désactivé l\'avertissement.',
+                'warnings-disabled': 'Avertissements de conteúdo pour adultos désativés. Il est de votre responsabilité.',
+                'warnings-enabled': 'Avertissements de conteúdo pour adultos activés.',
+                'install-title': 'Installer l\'application',
+                'install-note': 'Ajoutez Blyfox Social à votre écran d\'accueil pour une expérience d\'application.',
+                'install-btn': 'Installer',
+                'install-manual-note': 'Appuyez sur le menu do navegador e selecione "Adicionar à tela de início".'
+            }
+        };
+
+        function translateElement(elementId, key) {
+            const element = document.getElementById(elementId);
+            if (element && translations[currentLanguage] && translations[currentLanguage][key]) {
+                element.textContent = translations[currentLanguage][key];
+            }
+        }
+        
+        function translatePlaceholder(elementId, key) {
+            const element = document.getElementById(elementId);
+            if (element && translations[currentLanguage] && translations[currentLanguage][key]) {
+                element.placeholder = translations[currentLanguage][key];
+            }
+        }
+        
+        function updateUI() {
+            translateElement('nav-feed-text', 'nav-feed');
+            translateElement('nav-search-text', 'nav-search');
+            translateElement('nav-dms-text', 'nav-dms');
+            translateElement('nav-profile-text', 'nav-profile');
+            translateElement('modal-title', 'modal-title');
+            translateElement('modal-subtitle', 'modal-subtitle');
+            translatePlaceholder('username-input', 'username-placeholder');
+            translateElement('save-username-btn', 'save-btn');
+            translatePlaceholder('post-text', 'post-placeholder');
+            translateElement('post-btn', 'post-btn');
+            translateElement('label-adult-content', 'label-adult-content');
+            translateElement('feed-placeholder', 'feed-placeholder');
+            translateElement('forward-modal-title', 'forward-modal-title');
+            translatePlaceholder('forward-user-input', 'forward-input-placeholder');
+            translateElement('featured-posts-title', 'featured-posts-title');
+            translateElement('featured-placeholder', 'featured-placeholder');
+            translateElement('search-results-title', 'search-results-title');
+            translatePlaceholder('search-input', 'search-placeholder');
+            translateElement('dms-title', 'dms-title');
+            translatePlaceholder('dm-user-input', 'dms-input-placeholder');
+            translateElement('start-dm-btn', 'start-dm-btn');
+            translateElement('conversations-placeholder', 'conversations-placeholder');
+            translateElement('back-btn-text', 'back-btn');
+            translatePlaceholder('dm-message-input', 'dm-input-placeholder');
+            translateElement('send-dm-btn', 'send-btn');
+            translateElement('profile-title', 'profile-title');
+            translateElement('profile-id-note', 'profile-id-note');
+            translateElement('settings-btn-text', 'settings-btn');
+            translateElement('my-posts-title', 'my-posts-title');
+            translateElement('my-posts-placeholder', 'my-posts-placeholder');
+            
+            translateElement('settings-title', 'settings-title');
+            translateElement('language-title', 'language-title');
+            translateElement('content-settings-title', 'content-settings-title');
+            translateElement('adult-content-label', 'adult-content-label');
+            translateElement('adult-content-note', 'adult-content-note');
+            translateElement('install-title', 'install-title');
+            translateElement('install-note', 'install-note');
+            translateElement('install-btn', 'install-btn');
+            translateElement('install-manual-note', 'install-manual-note');
+            translateElement('back-profile-btn-text', 'back-btn');
+
+            document.querySelectorAll('.post-content').forEach(el => {
+                const isAdult = el.dataset.adult === 'true';
+                const hasOverlay = el.querySelector('.adult-content-overlay');
+                if (isAdult && !showAdultContent && !hasOverlay) {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'adult-content-overlay';
+                    overlay.innerHTML = `<h3 class="text-lg font-bold text-red-400 mb-2">${translations[currentLanguage]['content-warning-title']}</h3>
+                                         <p class="text-gray-300 text-center mb-4">${translations[currentLanguage]['content-warning-text']}</p>
+                                         <button class="px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold">${translations[currentLanguage]['content-warning-btn']}</button>`;
+                    el.appendChild(overlay);
+                    overlay.querySelector('button').addEventListener('click', () => overlay.remove());
+                } else if (!isAdult || showAdultContent) {
+                     if (hasOverlay) hasOverlay.remove();
+                }
+            });
+        }
+        
+        window.onload = async () => {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        await checkAndCreateProfile();
+                        isAuthReady = true;
+                        attachDataListeners();
+                    } else {
+                        try {
+                            if (initialAuthToken) {
+                                await signInWithCustomToken(auth, initialAuthToken);
+                            } else {
+                                await signInAnonymously(auth);
+                            }
+                        } catch (error) {
+                            console.error("Firebase Auth Error:", error);
+                        }
+                    }
+                });
+            } catch (e) {
+                console.error("Erro ao inicializar o Firebase:", e);
+                showCustomAlert("Erro ao inicializar o aplicativo.");
+            }
+
+            // Navigation and button event listeners
+            document.getElementById('feed-btn').addEventListener('click', () => showView('feed-view'));
+            document.getElementById('search-btn').addEventListener('click', () => showView('search-view'));
+            document.getElementById('dms-btn').addEventListener('click', () => showView('dms-view'));
+            document.getElementById('profile-btn').addEventListener('click', () => showView('profile-view'));
+            document.getElementById('settings-btn').addEventListener('click', () => showView('settings-view'));
+            document.getElementById('back-to-profile-btn').addEventListener('click', () => {
+                views['settings-view'].classList.add('hidden');
+                document.getElementById('profile-content').classList.remove('hidden');
+            });
+            postBtn.addEventListener('click', postMessage);
+            saveUsernameBtn.addEventListener('click', saveUsername);
+            startDmBtn.addEventListener('click', startDmChat);
+            sendDmBtn.addEventListener('click', sendDmMessage);
+            document.getElementById('back-to-dms-btn').addEventListener('click', showConversationsList);
+            mediaInput.addEventListener('change', handleMediaSelect);
+            searchInput.addEventListener('input', handleSearch);
+            closeForwardModalBtn.addEventListener('click', () => forwardModal.classList.add('hidden'));
+            forwardUserInput.addEventListener('input', handleForwardSearch);
+            adultContentToggle.addEventListener('change', handleAdultContentToggle);
+            languageSelect.addEventListener('change', handleLanguageChange);
+            installBtn.addEventListener('click', handleInstallClick);
+        };
+
+        async function handleInstallClick() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                    showCustomAlert(translations[currentLanguage]['install-success']);
+                }
+                deferredPrompt = null;
+            } else {
+                installManualNote.classList.remove('hidden');
+            }
+        }
+        
+        function handleLanguageChange() {
+            const newLanguage = languageSelect.value;
+            if (newLanguage !== currentLanguage) {
+                currentLanguage = newLanguage;
+                updateUI();
+                if (profileData) {
+                    const profileDocRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
+                    updateDoc(profileDocRef, { language: newLanguage }).catch(e => console.error("Erro ao salvar idioma:", e));
+                }
+            }
+        }
+        
+        function showView(viewId) {
+            Object.values(views).forEach(v => v.classList.add('hidden'));
+            const viewToShow = views[viewId];
+            if (viewToShow) {
+                viewToShow.classList.remove('hidden');
+                if (viewId === 'dms-view') {
+                    showConversationsList();
+                } else if (viewId === 'search-view') {
+                    renderFeaturedPosts();
+                }
+            }
+            if (viewId === 'profile-view') {
+                document.getElementById('profile-content').classList.remove('hidden');
+            } else {
+                 document.getElementById('profile-content').classList.add('hidden');
+            }
+        }
+
+        async function checkAndCreateProfile() {
+            if (!userId) return;
+            const profileDocRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
+            const profileSnap = await getDoc(profileDocRef);
+            if (profileSnap.exists()) {
+                profileData = profileSnap.data();
+                currentLanguage = profileData.language || 'pt';
+                languageSelect.value = currentLanguage;
+                updateUI();
+                profileUsernameEl.textContent = `@${profileData.username}`;
+                profileUserIdEl.textContent = `ID do Usuário: ${userId}`;
+                showAdultContent = profileData.showAdultContent || false;
+                adultContentToggle.checked = showAdultContent;
+                showView('feed-view');
+            } else {
+                usernameModal.classList.remove('hidden');
+            }
+        }
+
+        async function saveUsername() {
+            const username = usernameInput.value.trim().toLowerCase();
+            if (!username) { showCustomAlert(translations[currentLanguage]['error-username-empty']); return; }
+            try {
+                const q = query(collection(db, `artifacts/${appId}/public/data/usernames`), where("username", "==", username));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) { showCustomAlert(translations[currentLanguage]['error-username-exists']); return; }
+                const batch = writeBatch(db);
+                const userProfileRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
+                batch.set(userProfileRef, { username, createdAt: serverTimestamp(), showAdultContent: false, language: currentLanguage });
+                const usernameRef = doc(db, `artifacts/${appId}/public/data/usernames`, username);
+                batch.set(usernameRef, { userId: userId, createdAt: serverTimestamp() });
+                await batch.commit();
+                profileData = { username, showAdultContent: false, language: currentLanguage };
+                profileUsernameEl.textContent = `@${profileData.username}`;
+                profileUserIdEl.textContent = `ID do Usuário: ${userId}`;
+                usernameModal.classList.add('hidden');
+                showView('feed-view');
+            } catch (e) {
+                console.error("Erro ao salvar o nome de usuário: ", e);
+                showCustomAlert(translations[currentLanguage]['error-save-profile']);
+            }
+        }
+        
+        async function handleAdultContentToggle() {
+            showAdultContent = adultContentToggle.checked;
+            try {
+                const profileDocRef = doc(db, `artifacts/${appId}/users/${userId}/profile/data`);
+                await updateDoc(profileDocRef, { showAdultContent: showAdultContent });
+                if (showAdultContent) {
+                    showCustomAlert(translations[currentLanguage]['warnings-disabled']);
+                } else {
+                    showCustomAlert(translations[currentLanguage]['warnings-enabled']);
+                }
+            } catch (e) {
+                console.error("Erro ao atualizar a preferência de conteúdo:", e);
+                showCustomAlert(translations[currentLanguage]['error-save-profile']);
+            }
+        }
+
+        function attachDataListeners() {
+            if (!isAuthReady) return;
+            onSnapshot(collection(db, `artifacts/${appId}/public/data/posts`), (snapshot) => {
+                const posts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderPosts(posts, postsFeed, true);
+                const myPosts = posts.filter(post => post.authorId === userId);
+                renderPosts(myPosts, myPostsFeed, false);
+            }, (error) => {
+                console.error("Erro ao ouvir os posts:", error);
+            });
+            onSnapshot(collection(db, `artifacts/${appId}/users/${userId}/dms`), (snapshot) => {
+                const conversations = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderConversations(conversations);
+            }, (error) => {
+                console.error("Erro ao ouvir as conversas de DM:", error);
+            });
+        }
+        
+        async function postMessage() {
+            if (!isAuthReady || !profileData) { showCustomAlert(translations[currentLanguage]['error-auth']); return; }
+            const postText = postTextarea.value.trim();
+            if (postText === '' && !selectedMediaFile) { showCustomAlert(translations[currentLanguage]['post-no-content']); return; }
+            try {
+                const postsCollectionRef = collection(db, `artifacts/${appId}/public/data/posts`);
+                const hashtags = postText.match(/#(\w+)/g)?.map(tag => tag.substring(1).toLowerCase()) || [];
+                const postData = {
+                    authorId: userId,
+                    authorUsername: profileData.username,
+                    text: postText,
+                    createdAt: serverTimestamp(),
+                    hashtags: hashtags,
+                    isAdultContent: isAdultContentCheckbox.checked
+                };
+                if (selectedMediaFile) {
+                    postData.mediaUrl = 'https://placehold.co/600x400/2a3e5c/ffffff?text=Image';
+                    postData.mediaType = selectedMediaFile.type.startsWith('image/') ? 'image' : 'video';
+                }
+                await addDoc(postsCollectionRef, postData);
+                postTextarea.value = '';
+                mediaInput.value = null;
+                selectedMediaFile = null;
+                isAdultContentCheckbox.checked = false;
+                mediaPreview.classList.add('hidden');
+                mediaPreview.innerHTML = '';
+            } catch (e) {
+                console.error("Erro ao adicionar o documento: ", e);
+                showCustomAlert(translations[currentLanguage]['error-post']);
+            }
+        }
+        
+        function handleMediaSelect(event) {
+            selectedMediaFile = event.target.files[0];
+            if (selectedMediaFile) {
+                mediaPreview.classList.remove('hidden');
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    if (selectedMediaFile.type.startsWith('image/')) {
+                        mediaPreview.innerHTML = `<img src="${e.target.result}" alt="Preview" class="w-full h-full object-cover">`;
+                    } else if (selectedMediaFile.type.startsWith('video/')) {
+                        mediaPreview.innerHTML = `<video src="${e.target.result}" controls class="w-full h-full object-cover"></video>`;
+                    }
+                };
+                reader.readAsDataURL(selectedMediaFile);
+            } else {
+                mediaPreview.classList.add('hidden');
+                mediaPreview.innerHTML = '';
+            }
+        }
+        
+        async function handleLike(postId, isLiked) {
+            if (!isAuthReady) { showCustomAlert(translations[currentLanguage]['error-auth']); return; }
+            const likeDocRef = doc(db, `artifacts/${appId}/public/data/posts/${postId}/likes`, userId);
+            try {
+                if (isLiked) {
+                    await setDoc(likeDocRef, { userId, createdAt: serverTimestamp() });
+                } else {
+                    await deleteDoc(likeDocRef);
+                }
+            } catch (e) {
+                console.error("Erro ao curtir/descurtir: ", e);
+                showCustomAlert(translations[currentLanguage]['error-like']);
+            }
+        }
+
+        async function postComment(postId, commentText) {
+            if (!isAuthReady) { showCustomAlert(translations[currentLanguage]['error-auth']); return; }
+            if (!commentText.trim()) return;
+            try {
+                const commentsCollectionRef = collection(db, `artifacts/${appId}/public/data/posts/${postId}/comments`);
+                await addDoc(commentsCollectionRef, {
+                    authorId: userId,
+                    authorUsername: profileData.username,
+                    text: commentText,
+                    createdAt: serverTimestamp()
+                });
+            } catch (e) {
+                console.error("Erro ao adicionar comentário: ", e);
+                showCustomAlert(translations[currentLanguage]['error-comment']);
+            }
+        }
+        
+        async function renderPosts(posts, feedElement, showInteraction) {
+            feedElement.innerHTML = '';
+            if (posts.length === 0) { 
+                const placeholderKey = feedElement.id === 'posts-feed' ? 'feed-placeholder' : 'my-posts-placeholder';
+                feedElement.innerHTML = `<p class="text-center text-gray-400 italic">${translations[currentLanguage][placeholderKey]}</p>`; 
+                return;
+            }
+            posts.sort((a, b) => new Date(b.createdAt?.toDate()) - new Date(a.createdAt?.toDate()));
+
+            posts.forEach(async post => {
+                const postElement = document.createElement('div');
+                postElement.className = 'bg-slate-700 p-6 rounded-xl shadow-md transition-transform transform hover:scale-101 border border-transparent hover:border-blue-400 relative';
+                
+                const postHeader = `<div class="flex items-center mb-2">
+                    <i class="fas fa-user-circle text-xl text-gray-400 mr-2"></i>
+                    <span class="font-bold text-sm text-blue-400">@${post.authorUsername}</span>
+                    <span class="text-xs text-gray-500 ml-2">${post.createdAt ? new Date(post.createdAt.toDate()).toLocaleString() : ''}</span>
+                </div>`;
+                
+                let postContent = `<div class="post-content" data-adult="${post.isAdultContent}"><p class="text-gray-200 text-base break-words">${post.text.replace(/#(\w+)/g, '<span class="text-blue-400 cursor-pointer" onclick="window.handleHashtagClick(\'$1\')">#$1</span>')}</p>`;
+                
+                if (post.mediaUrl) {
+                    if (post.mediaType === 'image') {
+                        postContent += `<img src="${post.mediaUrl}" alt="Mídia" class="mt-4 rounded-lg w-full">`;
+                    } else if (post.mediaType === 'video') {
+                        postContent += `<video src="${post.mediaUrl}" controls class="mt-4 rounded-lg w-full"></video>`;
+                    }
+                }
+                
+                postContent += `</div>`;
+                
+                let interactionSection = '';
+                if (showInteraction) {
+                    const likesCollectionRef = collection(db, `artifacts/${appId}/public/data/posts/${post.id}/likes`);
+                    const commentsCollectionRef = collection(db, `artifacts/${appId}/public/data/posts/${post.id}/comments`);
+
+                    onSnapshot(likesCollectionRef, (snapshot) => {
+                        const likesCount = snapshot.size;
+                        const likeButton = postElement.querySelector('.like-btn');
+                        if (likeButton) {
+                            likeButton.innerHTML = `<i class="fas fa-heart mr-1"></i> ${likesCount}`;
+                        }
+                        const isLiked = snapshot.docs.some(doc => doc.id === userId);
+                        if (likeButton) {
+                            likeButton.classList.toggle('text-red-500', isLiked);
+                        }
+                    });
+
+                    onSnapshot(commentsCollectionRef, (snapshot) => {
+                        const comments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        const commentsContainer = postElement.querySelector('.comments-container');
+                        if (commentsContainer) {
+                            commentsContainer.innerHTML = '';
+                            comments.sort((a, b) => new Date(a.createdAt?.toDate()) - new Date(b.createdAt?.toDate()));
+                            comments.forEach(comment => {
+                                const commentEl = document.createElement('div');
+                                commentEl.className = 'bg-slate-600 p-3 rounded-lg mt-2';
+                                commentEl.innerHTML = `<span class="font-bold text-sm text-gray-300">@${comment.authorUsername}:</span> <span class="text-sm">${comment.text}</span>`;
+                                commentsContainer.appendChild(commentEl);
+                            });
+                        }
+                    });
+                    
+                    interactionSection = `<div class="flex items-center space-x-4 mt-4 text-sm text-gray-400">
+                        <button class="like-btn flex items-center hover:text-red-400 transition-colors duration-200">
+                            <i class="fas fa-heart mr-1"></i> 0
+                        </button>
+                        <button class="comment-toggle-btn flex items-center hover:text-blue-400 transition-colors duration-200">
+                            <i class="fas fa-comment mr-1"></i> <span class="comment-text">${translations[currentLanguage]['comment-toggle-btn']}</span>
+                        </button>
+                        ${post.mediaUrl ? `
+                        <button class="forward-btn flex items-center hover:text-green-400 transition-colors duration-200">
+                            <i class="fas fa-share mr-1"></i> <span class="forward-text">${translations[currentLanguage]['forward-btn']}</span>
+                        </button>` : ''}
+                    </div>
+                    <div class="comments-section mt-4 hidden">
+                        <div class="comments-container space-y-2 mb-2"></div>
+                        <div class="flex space-x-2">
+                            <input type="text" placeholder="${translations[currentLanguage]['comment-input-placeholder']}" class="comment-input flex-1 px-4 py-2 rounded-full bg-slate-600 text-white placeholder-gray-400 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <button class="comment-btn px-4 py-2 rounded-full bg-blue-500 text-white font-bold text-sm hover:bg-blue-600">${translations[currentLanguage]['comment-btn']}</button>
+                        </div>
+                    </div>`;
+                }
+
+                postElement.innerHTML = `${postHeader}${postContent}${interactionSection}`;
+                
+                const postContentEl = postElement.querySelector('.post-content');
+                if (post.isAdultContent && !showAdultContent) {
+                    const overlay = document.createElement('div');
+                    overlay.className = 'adult-content-overlay';
+                    overlay.innerHTML = `<h3 class="text-lg font-bold text-red-400 mb-2">${translations[currentLanguage]['content-warning-title']}</h3>
+                                         <p class="text-gray-300 text-center mb-4">${translations[currentLanguage]['content-warning-text']}</p>
+                                         <button class="px-4 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white font-bold">${translations[currentLanguage]['content-warning-btn']}</button>`;
+                    postContentEl.appendChild(overlay);
+                    overlay.querySelector('button').addEventListener('click', () => {
+                        overlay.remove();
+                    });
+                }
+
+                feedElement.appendChild(postElement);
+
+                if (showInteraction) {
+                    const likeBtn = postElement.querySelector('.like-btn');
+                    likeBtn.addEventListener('click', () => {
+                        const isLiked = likeBtn.classList.contains('text-red-500');
+                        handleLike(post.id, !isLiked);
+                    });
+                    
+                    const commentToggleBtn = postElement.querySelector('.comment-toggle-btn');
+                    commentToggleBtn.addEventListener('click', () => {
+                        postElement.querySelector('.comments-section').classList.toggle('hidden');
+                    });
+
+                    const commentBtn = postElement.querySelector('.comment-btn');
+                    const commentInput = postElement.querySelector('.comment-input');
+                    commentBtn.addEventListener('click', () => {
+                        postComment(post.id, commentInput.value);
+                        commentInput.value = '';
+                    });
+                    
+                    const forwardBtn = postElement.querySelector('.forward-btn');
+                    if (forwardBtn) {
+                        forwardBtn.addEventListener('click', () => {
+                            postToForward = post;
+                            forwardModal.classList.remove('hidden');
+                        });
+                    }
+                }
+            });
+        }
+        
+        // Funções de DM
+        async function startDmChat() {
+            const recipientInput = dmUserSearchInput.value.trim().toLowerCase();
+            if (!recipientInput) { showCustomAlert(translations[currentLanguage]['error-username-empty']); return; }
+            const usersRef = collection(db, `artifacts/${appId}/public/data/usernames`);
+            const q = query(usersRef, where("username", "==", recipientInput));
+            try {
+                const querySnapshot = await getDocs(q);
+                if (querySnapshot.empty) { showCustomAlert(translations[currentLanguage]['search-user-not-found']); return; }
+                const recipientData = querySnapshot.docs[0].data();
+                const recipientId = recipientData.userId;
+                if (recipientId === userId) { showCustomAlert(translations[currentLanguage]['error-dm-self']); return; }
+                currentChatRecipientId = recipientId;
+                dmRecipientUsernameEl.textContent = `@${recipientInput}`;
+                showDmChat();
+            } catch (e) {
+                console.error("Erro ao buscar nome de usuário:", e);
+                showCustomAlert(translations[currentLanguage]['error-search-user']);
+            }
+        }
+
+        function showConversationsList() {
+            views['dm-chat-view'].classList.add('hidden');
+            document.getElementById('conversations-list').classList.remove('hidden');
+            currentChatRecipientId = null;
+        }
+        
+        function showDmChat() {
+            document.getElementById('conversations-list').classList.add('hidden');
+            views['dm-chat-view'].classList.remove('hidden');
+            const messagesRef = collection(db, `artifacts/${appId}/users/${userId}/dms/${currentChatRecipientId}/messages`);
+            onSnapshot(messagesRef, (snapshot) => {
+                const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderMessages(messages);
+            });
+        }
+
+        async function sendDmMessage() {
+            if (!currentChatRecipientId) return;
+            const messageText = dmMessageInput.value.trim();
+            if (!messageText) return;
+            try {
+                const myMessagesRef = collection(db, `artifacts/${appId}/users/${userId}/dms/${currentChatRecipientId}/messages`);
+                const theirMessagesRef = collection(db, `artifacts/${appId}/users/${currentChatRecipientId}/dms/${userId}/messages`);
+                const batch = writeBatch(db);
+                const myMessage = {
+                    senderId: userId,
+                    recipientId: currentChatRecipientId,
+                    text: messageText,
+                    createdAt: serverTimestamp()
+                };
+                const theirMessage = {
+                    senderId: userId,
+                    recipientId: currentChatRecipientId,
+                    text: messageText,
+                    createdAt: serverTimestamp()
+                };
+                batch.set(doc(db, `artifacts/${appId}/users/${userId}/dms`, currentChatRecipientId), {
+                    lastMessage: messageText,
+                    lastMessageAt: myMessage.createdAt
+                });
+                batch.set(doc(db, `artifacts/${appId}/users/${currentChatRecipientId}/dms`, userId), {
+                    lastMessage: messageText,
+                    lastMessageAt: myMessage.createdAt
+                });
+                batch.add(myMessagesRef, myMessage);
+                batch.add(theirMessagesRef, theirMessage);
+                await batch.commit();
+                dmMessageInput.value = '';
+            } catch (e) {
+                console.error("Erro ao enviar DM:", e);
+                showCustomAlert(translations[currentLanguage]['error-dm-send']);
+            }
+        }
+
+        async function forwardPost(recipientId) {
+            if (!postToForward || !isAuthReady) { return; }
+            try {
+                const myMessagesRef = collection(db, `artifacts/${appId}/users/${userId}/dms/${recipientId}/messages`);
+                const theirMessagesRef = collection(db, `artifacts/${appId}/users/${recipientId}/dms/${userId}/messages`);
+                const batch = writeBatch(db);
+                const messageData = {
+                    senderId: userId,
+                    recipientId: recipientId,
+                    forwardedPostId: postToForward.id,
+                    forwardedPostType: postToForward.mediaType || 'text',
+                    createdAt: serverTimestamp()
+                };
+                batch.add(myMessagesRef, messageData);
+                batch.add(theirMessagesRef, messageData);
+                batch.set(doc(db, `artifacts/${appId}/users/${userId}/dms`, recipientId), {
+                    lastMessage: 'Post encaminhado',
+                    lastMessageAt: messageData.createdAt
+                });
+                batch.set(doc(db, `artifacts/${appId}/users/${recipientId}/dms`, userId), {
+                    lastMessage: 'Post encaminhado',
+                    lastMessageAt: messageData.createdAt
+                });
+                await batch.commit();
+                showCustomAlert(translations[currentLanguage]['forward-success']);
+                forwardModal.classList.add('hidden');
+                postToForward = null;
+            } catch (e) {
+                console.error("Erro ao encaminhar post:", e);
+                showCustomAlert(translations[currentLanguage]['error-forward']);
+            }
+        }
+
+        function renderConversations(conversations) {
+            conversationsList.innerHTML = '';
+            if (conversations.length === 0) { conversationsList.innerHTML = `<p class="text-center text-gray-400 italic">${translations[currentLanguage]['conversations-placeholder']}</p>`; return; }
+            conversations.sort((a, b) => new Date(b.lastMessageAt?.toDate()) - new Date(a.lastMessageAt?.toDate()));
+            conversations.forEach(async convo => {
+                const convoEl = document.createElement('div');
+                convoEl.className = 'bg-slate-700 p-4 rounded-xl shadow-lg cursor-pointer hover:bg-slate-600 transition-colors';
+                const recipientSnap = await getDocs(query(collection(db, `artifacts/${appId}/public/data/usernames`), where("userId", "==", convo.id)));
+                const recipientUsername = recipientSnap.docs[0]?.id || 'Usuário Desconhecido';
+                convoEl.innerHTML = `<p class="font-bold text-blue-400">@${recipientUsername}</p><p class="text-sm text-gray-400 truncate">${convo.lastMessage}</p>`;
+                convoEl.addEventListener('click', () => {
+                    currentChatRecipientId = convo.id;
+                    dmRecipientUsernameEl.textContent = `@${recipientUsername}`;
+                    showDmChat();
+                });
+                conversationsList.appendChild(convoEl);
+            });
+        }
+
+        async function renderMessages(messages) {
+            dmMessagesContainer.innerHTML = '';
+            messages.sort((a, b) => new Date(a.createdAt?.toDate()) - new Date(b.createdAt?.toDate()));
+            for (const msg of messages) {
+                const isMe = msg.senderId === userId;
+                const msgEl = document.createElement('div');
+                msgEl.className = `p-3 rounded-xl max-w-[80%] ${isMe ? 'bg-blue-500 text-white self-end ml-auto' : 'bg-slate-600 text-gray-200 self-start mr-auto'}`;
+                if (msg.text) {
+                    msgEl.textContent = msg.text;
+                } else if (msg.forwardedPostId) {
+                    const postSnap = await getDoc(doc(db, `artifacts/${appId}/public/data/posts`, msg.forwardedPostId));
+                    if (postSnap.exists()) {
+                        const post = postSnap.data();
+                        let mediaContent = '';
+                        if (post.mediaUrl) {
+                            if (post.mediaType === 'image') {
+                                mediaContent = `<img src="${post.mediaUrl}" alt="Post encaminhado" class="mt-2 rounded-lg w-full">`;
+                            } else if (post.mediaType === 'video') {
+                                mediaContent = `<video src="${post.mediaUrl}" controls class="mt-2 rounded-lg w-full"></video>`;
+                            }
+                        }
+                        msgEl.innerHTML = `<div class="font-bold text-sm text-blue-300 mb-1">Post Encaminhado de @${post.authorUsername}</div>
+                                           <div class="text-sm">${post.text}</div>${mediaContent}`;
+                    }
+                }
+                dmMessagesContainer.appendChild(msgEl);
+            }
+            dmMessagesContainer.scrollTop = dmMessagesContainer.scrollHeight;
+        }
+
+        // Search & Explore Functions
+        async function renderFeaturedPosts() {
+            featuredPostsFeed.innerHTML = `<p class="text-center text-gray-400 italic">${translations[currentLanguage]['featured-placeholder']}</p>`;
+            try {
+                const postsWithLikes = [];
+                const postsSnap = await getDocs(collection(db, `artifacts/${appId}/public/data/posts`));
+                const fetchLikesPromises = postsSnap.docs.map(async postDoc => {
+                    const likesSnap = await getDocs(collection(db, `artifacts/${appId}/public/data/posts/${postDoc.id}/likes`));
+                    return { ...postDoc.data(), id: postDoc.id, likesCount: likesSnap.size };
+                });
+                const posts = await Promise.all(fetchLikesPromises);
+                posts.sort((a, b) => b.likesCount - a.likesCount);
+                renderPosts(posts, featuredPostsFeed, true);
+            } catch (e) {
+                console.error("Erro ao buscar posts em destaque:", e);
+                featuredPostsFeed.innerHTML = `<p class="text-center text-gray-400 italic">${translations[currentLanguage]['error-search']}</p>`;
+            }
+        }
+        
+        async function handleSearch(event) {
+            const queryText = event.target.value.trim().toLowerCase();
+            searchResultsContainer.innerHTML = '';
+            searchResultsTitle.classList.add('hidden');
+            
+            if (!queryText) {
+                renderFeaturedPosts();
+                return;
+            }
+            searchResultsTitle.classList.remove('hidden');
+            searchResultsContainer.innerHTML = `<p class="text-center text-gray-400 italic">${translations[currentLanguage]['featured-placeholder']}</p>`;
+            try {
+                if (queryText.startsWith('#')) {
+                    const hashtag = queryText.substring(1);
+                    const q = query(collection(db, `artifacts/${appId}/public/data/posts`), where("hashtags", "array-contains", hashtag));
+                    const querySnap = await getDocs(q);
+                    const posts = querySnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    if (posts.length === 0) {
+                        searchResultsContainer.innerHTML = `<p class="text-center text-gray-400 italic">${translations[currentLanguage]['search-no-posts']}</p>`;
+                    } else {
+                        renderPosts(posts, searchResultsContainer, true);
+                    }
+                } else {
+                    const q = query(collection(db, `artifacts/${appId}/public/data/usernames`), where("username", "==", queryText));
+                    const querySnap = await getDocs(q);
+                    if (querySnap.empty) {
+                        searchResultsContainer.innerHTML = `<p class="text-center text-gray-400 italic">${translations[currentLanguage]['search-no-profile']}</p>`;
+                    } else {
+                        const userDoc = querySnap.docs[0];
+                        const userProfile = userDoc.data();
+                        const userEl = document.createElement('div');
+                        userEl.className = 'bg-slate-700 p-6 rounded-xl shadow-md text-center';
+                        userEl.innerHTML = `
+                            <i class="fas fa-user-circle text-4xl text-gray-400 mb-2"></i>
+                            <p class="text-lg font-bold">@${userDoc.id}</p>
+                            <p class="text-xs text-gray-500">${translations[currentLanguage]['profile-user-id-label']} ${userProfile.userId.substring(0, 8)}...</p>
+                        `;
+                        searchResultsContainer.innerHTML = '';
+                        searchResultsContainer.appendChild(userEl);
+                    }
+                }
+            } catch (e) {
+                console.error("Erro na busca:", e);
+                searchResultsContainer.innerHTML = `<p class="text-center text-gray-400 italic">${translations[currentLanguage]['error-search']}</p>`;
+            }
+        }
+        
+        async function handleForwardSearch(event) {
+            const queryText = event.target.value.trim().toLowerCase();
+            forwardResults.innerHTML = '';
+            if (!queryText) return;
+            try {
+                const q = query(collection(db, `artifacts/${appId}/public/data/usernames`), where("username", "==", queryText));
+                const querySnap = await getDocs(q);
+                if (querySnap.empty) {
+                    forwardResults.innerHTML = `<p class="text-center text-gray-400 italic">${translations[currentLanguage]['search-user-not-found']}</p>`;
+                    return;
+                }
+                const userDoc = querySnap.docs[0];
+                const userProfile = userDoc.data();
+                const userEl = document.createElement('button');
+                userEl.className = 'w-full text-left bg-slate-600 p-3 rounded-lg hover:bg-slate-500 transition-colors';
+                userEl.innerHTML = `<span class="font-bold text-blue-400">@${userDoc.id}</span>`;
+                userEl.addEventListener('click', () => forwardPost(userProfile.userId));
+                forwardResults.appendChild(userEl);
+            } catch(e) {
+                 console.error("Erro na busca de encaminhamento:", e);
+                 forwardResults.innerHTML = `<p class="text-center text-gray-400 italic">${translations[currentLanguage]['error-search-user']}</p>`;
+            }
+        }
+        
+        window.handleHashtagClick = (hashtag) => {
+            searchInput.value = `#${hashtag}`;
+            showView('search-view');
+            handleSearch({ target: { value: `#${hashtag}` } });
+        };
+
+        function showCustomAlert(message) {
+            alertContainer.textContent = message;
+            alertContainer.classList.remove('hidden');
+            setTimeout(() => {
+                alertContainer.classList.add('hidden');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
